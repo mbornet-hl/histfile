@@ -1,0 +1,70 @@
+#!/bin/bash
+#
+# Copyright (C) 2017-2019, Martial Bornet
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#	@(#)	[MB] de_get_hist_by_date	Version 1.2 du 19/11/06 - 
+#
+
+usage()
+{
+	echo "Usage: $0 date_inf date_sup histfile [histfile ...]" >&2
+	echo " Date format : 'YYYY-mm-dd HH:MM:SS'"
+}
+
+if [ "$3" = "" ]; then
+	usage
+	exit 1
+fi
+
+date_inf="$1"
+shift
+date_sup="$1"
+shift
+
+epoch_inf=`date -d "$date_inf" '+%s'`
+epoch_sup=`date -d "$date_sup" '+%s'`
+
+max_len=`ls -1 "$@" | sed 's:.*/::' | awk '{ if (length > max_len) { max_len = length } } END { printf("%d\n", max_len + 1);}'`
+for histfile in "$@"
+do
+	basename=`basename "$histfile"`
+	label=`printf "%-*s" "$max_len" "$basename"`
+
+	awk 'BEGIN {
+		file			= "'"$histfile"'";
+		epoch_inf		= '"$epoch_inf"';
+		epoch_sup		= '"$epoch_sup"';
+
+		display		= 0;
+	}
+	{
+		if ($0 ~ /^#[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]/) {
+			display		= 0;
+			date_s		= $1;
+			sub(/^#/, "", date_s);
+			if (date_s >= epoch_inf && date_s <= epoch_sup) {
+				display		= 1;
+				print;
+			}
+		}
+		else {
+			if (display != 0) {
+				print;
+			}
+			display		= 0;
+		}
+	}' "$histfile" | ts_to_date | sed "s/^/$label/"
+done | sort -b -k2
