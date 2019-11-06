@@ -1,0 +1,202 @@
+#!/bin/bash
+#
+# Copyright (C) 2019, Martial Bornet
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#	@(#)	[MB] de_hist_colorize	Version 1.13 du 19/11/04 - 
+#
+
+RE_remaining_dates()
+{
+	echo -n '-2b' "'[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] ..:..:.. .*'"
+	echo ' '
+}
+
+get_color()
+{
+	period="$1"
+	sed '/^[ 	]#/d' <<- EOF | awk '$1 == "'"$period"'" { print $2; }'
+		0		3c	# Current period
+		1		2g	# Period - 1
+		2		3y	# Period - 2
+		3		2y	# Period - 3
+		4		3r	# Period - 4
+		5		2r	# Period - 5
+		6		2m	# Period - 6
+	EOF
+}
+
+hl_opts_year()
+{
+	curr_year=`date '+%Y'`
+	for period in {0..6}
+	do
+		color=`get_color "$period"`
+		year=`expr "$curr_year" - "$period"`
+		HL_COL="-$color"
+		HL_RE="$year-[0-9][0-9]-[0-9][0-9] ..:..:.. .*"
+		echo -n "$HL_COL" "'$HL_RE' "
+	done
+	RE_remaining_dates
+}
+
+hl_opts_month()
+{
+	curr_year=`date '+%Y'`
+	curr_month=`date '+%m'`
+	for period in {0..6}
+	do
+		color=`get_color "$period"`
+		month=`echo "$curr_month" | awk '{ printf("%02d\n", ((($1 - '"$period"' - 1) % 12 + 12) % 12 + 1)); }'`
+		HL_COL="-$color"
+		HL_RE="$curr_year-$month-[0-9][0-9] ..:..:.. .*"
+		echo -n "$HL_COL" "'$HL_RE' "
+	done
+	RE_remaining_dates
+}
+
+# Function hl_opts_week() :
+# generation of hl options based on the current date, one color per week
+hl_opts_week()
+{
+	for period in {0..6}
+	do
+		color=`get_color "$period"`
+		HL_COL="-$color"
+		first='true'
+		for d in {0..6}
+		do
+			day=$(date '+%Y-%m-%d' -d "@$(echo "$(date '+%s') 24 3600 * 7 $period * $d + * - p" | dc)")
+			if [ "$first" = 'true' ]; then
+				HL_RE="(($day"
+				first='false'
+			else
+				HL_RE="$HL_RE|$day"
+			fi
+		done
+		HL_RE="$HL_RE) ..:..:..( .*)?)"
+		echo -n "$HL_COL" "'$HL_RE' "
+	done
+	RE_remaining_dates
+}
+
+hl_opts_day()
+{
+	for period in {0..6}
+	do
+		color=`get_color "$period"`
+		day=$(date '+%Y-%m-%d' -d "@$(echo "$(date '+%s') 24 3600 * $period * - p" | dc)")
+		HL_COL="-$color"
+		HL_RE="($day ..:..:..( .*)?)"
+		echo -n "$HL_COL" "'$HL_RE' "
+	done
+	RE_remaining_dates
+}
+
+hl_opts_hour()
+{
+	for period in {0..6}
+	do
+		color=`get_color "$period"`
+		hour=$(date '+%Y-%m-%d %H' -d "@$(echo "$(date '+%s') 3600 $period * - p" | dc)")
+		HL_COL="-$color"
+		HL_RE="($hour:..:..( .*)?)"
+		echo -n "$HL_COL" "'$HL_RE' "
+	done
+	RE_remaining_dates
+}
+
+hl_opts_min()
+{
+	for period in {0..6}
+	do
+		color=`get_color "$period"`
+		min=$(date '+%Y-%m-%d %H:%M' -d "@$(echo "$(date '+%s') 60 $period * - p" | dc)")
+		HL_COL="-$color"
+		HL_RE="($min:..( .*)?)"
+		echo -n "$HL_COL" "'$HL_RE' "
+	done
+	RE_remaining_dates
+}
+
+# Function ts_to_date() :
+# convert timestamps in seconds from the Epoch to human readable timestamp
+# ts_to_date()
+# {
+# 	echo "Processing $label ... (`wc -l "$1" | awk '{ print $1 }'` lines)" > /dev/tty
+# 	awk '{
+# 		if ($0 ~ /^#[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]$/) {
+# 			if (ts_displayed == 1) {
+# 				printf("\n");
+# 			}
+# 			date_s		= $1;
+# 			sub(/^#/, "", date_s);
+# 			cmd			= "date '"'"'+%Y-%m-%d %H:%M:%S'"'"' -d '"'"'@" date_s "'"'"'";
+# 			while ((cmd | getline date) > 0) {
+# 				printf("%s ", date);
+# 			}
+# 			close(cmd);
+# 			ts_displayed	= 1;
+# 		}
+# 		else {
+# 			print;
+# 			ts_displayed	= 0;
+# 		}
+# 	}' "$1"
+# }
+
+# Main program
+case `basename $0` in
+	hY)		hl_opts='hl_opts_year'
+			;;
+
+	hm)		hl_opts='hl_opts_month'
+			;;
+
+	hW)		hl_opts='hl_opts_week'
+			;;
+
+	hD)		hl_opts='hl_opts_day'
+			;;
+
+	hH)		hl_opts='hl_opts_hour'
+			;;
+
+	hM)		hl_opts='hl_opts_min'
+			;;
+
+	*)		echo "$0: unmanaged program name !" >&2
+			exit 1
+			;;
+esac
+
+if [ "$1" = "-D" ]; then
+	DEBUG_OPT='-D'
+	shift
+else
+	DEBUG_OPT=''
+fi
+
+if [ "$1" = "" ]; then
+	sort -b -k2 | eval hl -e "$DEBUG_OPT" "$("$hl_opts")"
+else
+	max_len=`ls -1 "$@" | sed 's:.*/::' | awk '{ if (length > max_len) { max_len = length } } END { printf("%d\n", max_len + 1);}'`
+	for histfile in "$@"
+	do
+		basename=`basename "$histfile"`
+		label=`printf "%-*s" "$max_len" "$basename"`
+		ts_to_date "$histfile" | sed "s/^/$label/"
+	done | sort -b -k2 | eval hl -e "$DEBUG_OPT" "$("$hl_opts")" -A0,3c2B "'^([^ ]+)'"
+fi
