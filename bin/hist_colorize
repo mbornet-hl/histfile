@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-#	@(#)	[MB] de_hist_colorize	Version 1.13 du 19/11/04 - 
+#	@(#)	[MB] de_hist_colorize	Version 1.14 du 20/08/03 - 
 #
 
 RE_remaining_dates()
@@ -28,20 +28,23 @@ get_color()
 {
 	period="$1"
 	sed '/^[ 	]#/d' <<- EOF | awk '$1 == "'"$period"'" { print $2; }'
-		0		3c	# Current period
-		1		2g	# Period - 1
-		2		3y	# Period - 2
+		0		3w	# Current period
+		1		3m	# Period - 1
+		2		3r	# Period - 2
 		3		2y	# Period - 3
-		4		3r	# Period - 4
-		5		2r	# Period - 5
-		6		2m	# Period - 6
+		4		3y	# Period - 4
+		5		3g	# Period - 5
+		6		2g	# Period - 6
+		7		3c	# Period - 7
+		8		3b	# Period - 8
+		9		2b	# Period - 9
 	EOF
 }
 
 hl_opts_year()
 {
 	curr_year=`date '+%Y'`
-	for period in {0..6}
+	for period in {0..9}
 	do
 		color=`get_color "$period"`
 		year=`expr "$curr_year" - "$period"`
@@ -56,7 +59,7 @@ hl_opts_month()
 {
 	curr_year=`date '+%Y'`
 	curr_month=`date '+%m'`
-	for period in {0..6}
+	for period in {0..9}
 	do
 		color=`get_color "$period"`
 		month=`echo "$curr_month" | awk '{ printf("%02d\n", ((($1 - '"$period"' - 1) % 12 + 12) % 12 + 1)); }'`
@@ -71,7 +74,7 @@ hl_opts_month()
 # generation of hl options based on the current date, one color per week
 hl_opts_week()
 {
-	for period in {0..6}
+	for period in {0..9}
 	do
 		color=`get_color "$period"`
 		HL_COL="-$color"
@@ -94,7 +97,7 @@ hl_opts_week()
 
 hl_opts_day()
 {
-	for period in {0..6}
+	for period in {0..9}
 	do
 		color=`get_color "$period"`
 		day=$(date '+%Y-%m-%d' -d "@$(echo "$(date '+%s') 24 3600 * $period * - p" | dc)")
@@ -107,7 +110,7 @@ hl_opts_day()
 
 hl_opts_hour()
 {
-	for period in {0..6}
+	for period in {0..9}
 	do
 		color=`get_color "$period"`
 		hour=$(date '+%Y-%m-%d %H' -d "@$(echo "$(date '+%s') 3600 $period * - p" | dc)")
@@ -120,7 +123,7 @@ hl_opts_hour()
 
 hl_opts_min()
 {
-	for period in {0..6}
+	for period in {0..9}
 	do
 		color=`get_color "$period"`
 		min=$(date '+%Y-%m-%d %H:%M' -d "@$(echo "$(date '+%s') 60 $period * - p" | dc)")
