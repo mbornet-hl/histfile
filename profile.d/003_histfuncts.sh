@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-#	@(#)	[MB] de_003_histfuncts.sh	Version 1.1 du 19/11/06 - 
+#	@(#)	[MB] de_003_histfuncts.sh	Version 1.2 du 20/07/31 - 
 #
 
 # Generic function to call history colorization scripts
@@ -69,4 +69,34 @@ hH()
 hM()
 {
 	generic_hist hM "$@"
+}
+
+hYg()
+{
+	hY ~/.hist* | grep "$1"
+}
+
+hmg()
+{
+	hm ~/.hist* | grep "$1"
+}
+
+hWg()
+{
+	hW ~/.hist* | grep "$1"
+}
+
+hDg()
+{
+	hD ~/.hist* | grep "$1"
+}
+
+hHg()
+{
+	hH ~/.hist* | grep "$1"
+}
+
+hMg()
+{
+	hM ~/.hist* | grep "$1"
 }
